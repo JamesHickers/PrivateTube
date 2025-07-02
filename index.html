@@ -86,12 +86,10 @@
 </main>
 
 <script>
-  const API_KEY = 'YOUR_YOUTUBE_API_KEY_HERE';
-  const CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
+  const API_KEY = 'AIzaSyBTAUqNqfuq6WioNjs8TnO1UkobOdMIc1Y';
+  const CLIENT_ID = '1066455750829-i1uj1lmpo2uoil9r2ku7mvpn73c2ga5e.apps.googleusercontent.com';
   const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"];
   const SCOPES = "https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.force-ssl";
-
-  let gapiInited = false;
 
   function gapiLoaded() {
     gapi.load("client:auth2", initializeGapiClient);
@@ -104,11 +102,16 @@
       discoveryDocs: DISCOVERY_DOCS,
       scope: SCOPES,
     });
-    gapiInited = true;
   }
 
   function handleAuthClick() {
-    gapi.auth2.getAuthInstance().signIn();
+    const authInstance = gapi.auth2.getAuthInstance();
+    if (!authInstance.isSignedIn.get()) {
+      authInstance.signIn();
+    } else {
+      authInstance.signOut();
+      alert("Signed out");
+    }
   }
 
   const searchInput = document.getElementById("searchInput");
@@ -122,15 +125,17 @@
     playerContainer.innerHTML = "";
     resultsContainer.innerHTML = "<p>Loading...</p>";
 
-    const res = await gapi.client.youtube.search.list({
-      part: "snippet",
-      type: "video",
-      q: query,
-      maxResults: 12
-    });
-
-    const videos = res.result.items;
-    renderResults(videos);
+    try {
+      const response = await gapi.client.youtube.search.list({
+        part: "snippet",
+        type: "video",
+        q: query,
+        maxResults: 12,
+      });
+      renderResults(response.result.items);
+    } catch (error) {
+      resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+    }
   }
 
   function renderResults(videos) {
@@ -164,7 +169,11 @@
     `;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  gapiLoaded();
+
+  window.onload = () => {
+    gapiLoaded();
+  };
 </script>
+
 </body>
 </html>
