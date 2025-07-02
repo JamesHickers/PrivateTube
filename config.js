@@ -2,6 +2,7 @@
 export const config = {
   GOOGLE_API_KEY: 'your-google-api-key-here',
   GOOGLE_CLIENT_ID: 'your-google-client-id-here',
+  GOOGLE_CLIENT_SECRET: 'your-google-client-secret-here',  // fixed name + added comma
   SPOTIFY_CLIENT_ID: 'your-spotify-client-id-here',
   SPOTIFY_CLIENT_SECRET: 'your-spotify-client-secret-here'
 };
