@@ -2,56 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BarneyTube – Private YouTube Frontend</title>
+  <title>BarneyTube – YouTube Frontend</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://apis.google.com/js/api.js"></script>
   <style>
     body {
-      margin: 0;
-      background: #121212;
-      color: #eee;
-      font-family: Arial, sans-serif;
+      margin: 0; background: #121212; color: #eee; font-family: Arial, sans-serif;
     }
     header {
-      padding: 1rem;
-      background: #1f1f1f;
-      display: flex;
-      gap: 0.5rem;
-      justify-content: center;
-      align-items: center;
+      padding: 1rem; background: #1f1f1f; display: flex; gap: 0.5rem; justify-content: center; align-items: center;
     }
     input[type="text"] {
-      width: 60%;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 9999px;
-      background: #222;
-      color: #eee;
+      width: 60%; padding: 0.5rem 1rem; border: none; border-radius: 9999px; background: #222; color: #eee;
     }
     button {
-      padding: 0.5rem 1.2rem;
-      border: none;
-      border-radius: 9999px;
-      background: #bb86fc;
-      color: #121212;
-      font-weight: bold;
-      cursor: pointer;
+      padding: 0.5rem 1.2rem; border: none; border-radius: 9999px; background: #bb86fc; color: #121212; font-weight: bold; cursor: pointer;
     }
     main {
-      max-width: 960px;
-      margin: 1rem auto;
-      padding: 0 1rem;
+      max-width: 960px; margin: 1rem auto; padding: 0 1rem;
     }
     .results {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;
     }
     .video {
-      background: #1e1e1e;
-      border-radius: 10px;
-      overflow: hidden;
-      cursor: pointer;
+      background: #1e1e1e; border-radius: 10px; overflow: hidden; cursor: pointer;
     }
     .video img {
       width: 100%;
@@ -60,22 +34,16 @@
       padding: 0.6rem;
     }
     .info h3 {
-      margin: 0;
-      font-size: 1rem;
+      margin: 0; font-size: 1rem;
     }
     iframe {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      border: none;
-      margin-bottom: 2rem;
-      border-radius: 12px;
+      width: 100%; aspect-ratio: 16 / 9; border: none; margin-bottom: 2rem; border-radius: 12px;
     }
   </style>
 </head>
 <body>
 
 <header>
-  <button id="authButton">Sign In</button>
   <input type="text" id="searchInput" placeholder="Search YouTube..." />
   <button id="searchButton">Search</button>
 </header>
@@ -84,104 +52,77 @@
   <div id="playerContainer"></div>
   <div class="results" id="resultsContainer"></div>
 </main>
-<script src="https://apis.google.com/js/api.js"></script>
 
 <script type="module">
+  import { createYouTubePlayer } from './Player/youtubePlayer.js';
   import { config } from './config.js';
 
   const API_KEY = config.GOOGLE_API_KEY;
-  const CLIENT_ID = config.GOOGLE_CLIENT_ID;
   const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"];
-  const SCOPES = "https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.force-ssl";
+  
+  const searchInput = document.getElementById('searchInput');
+  const searchButton = document.getElementById('searchButton');
+  const resultsContainer = document.getElementById('resultsContainer');
+  const playerContainer = document.getElementById('playerContainer');
 
-  async function loadGapi() {
-    return new Promise(resolve => {
-      gapi.load('client:auth2', resolve);
-    });
+  // Load gapi client
+  function loadGapi() {
+    return new Promise(resolve => gapi.load('client', resolve));
   }
 
-  async function initializeClient() {
+  async function initClient() {
     await gapi.client.init({
       apiKey: API_KEY,
-      clientId: CLIENT_ID,
       discoveryDocs: DISCOVERY_DOCS,
-      scope: SCOPES,
     });
   }
 
-  async function main() {
+  async function searchVideos(query) {
+    const response = await gapi.client.youtube.search.list({
+      part: 'snippet',
+      q: query,
+      type: 'video',
+      maxResults: 12,
+    });
+    return response.result.items;
+  }
+
+  function renderResults(videos) {
+    resultsContainer.innerHTML = '';
+    videos.forEach(video => {
+      const vid = video.id.videoId;
+      const title = video.snippet.title;
+      const thumb = video.snippet.thumbnails.high.url;
+      const div = document.createElement('div');
+      div.className = 'video';
+      div.innerHTML = `
+        <img src="${thumb}" alt="${title}">
+        <div class="info"><h3>${title}</h3></div>
+      `;
+      div.onclick = () => createYouTubePlayer('playerContainer', vid, { autoplay: true, width: '100%', height: 360 });
+      resultsContainer.appendChild(div);
+    });
+  }
+
+  async function setup() {
     await loadGapi();
-    await initializeClient();
-
-    const authInstance = gapi.auth2.getAuthInstance();
-
-    const authButton = document.getElementById('authButton');
-    const searchButton = document.getElementById('searchButton');
-    const searchInput = document.getElementById('searchInput');
-    const resultsContainer = document.getElementById('resultsContainer');
-    const playerContainer = document.getElementById('playerContainer');
-
-    authButton.textContent = authInstance.isSignedIn.get() ? 'Sign Out' : 'Sign In';
-
-    authButton.onclick = async () => {
-      if (!authInstance.isSignedIn.get()) {
-        await authInstance.signIn();
-        authButton.textContent = 'Sign Out';
-      } else {
-        await authInstance.signOut();
-        authButton.textContent = 'Sign In';
-        alert('Signed out');
-      }
-    };
+    await initClient();
 
     searchButton.onclick = async () => {
       const query = searchInput.value.trim();
       if (!query) return;
       playerContainer.innerHTML = '';
       resultsContainer.innerHTML = '<p>Loading...</p>';
-
       try {
-        const response = await gapi.client.youtube.search.list({
-          part: 'snippet',
-          type: 'video',
-          q: query,
-          maxResults: 12,
-        });
-        renderResults(response.result.items);
+        const videos = await searchVideos(query);
+        renderResults(videos);
       } catch (err) {
         resultsContainer.innerHTML = `<p>Error: ${err.message}</p>`;
       }
     };
-
-    function renderResults(videos) {
-      resultsContainer.innerHTML = '';
-      for (const video of videos) {
-        const vid = video.id.videoId;
-        const title = video.snippet.title;
-        const thumb = video.snippet.thumbnails.high.url;
-        const div = document.createElement('div');
-        div.className = 'video';
-        div.innerHTML = `
-          <img src="${thumb}" alt="${title}">
-          <div class="info"><h3>${title}</h3></div>
-        `;
-        div.onclick = () => playVideo(vid);
-        resultsContainer.appendChild(div);
-      }
-    }
-
-    function playVideo(id) {
-      playerContainer.innerHTML = `
-        <iframe 
-          src="https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-          sandbox="allow-scripts allow-same-origin allow-presentation"
-        ></iframe>`;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
   }
-  window.onload = main;
+
+  window.onload = setup;
 </script>
 </body>
 </html>
