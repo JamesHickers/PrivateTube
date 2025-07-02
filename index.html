@@ -132,7 +132,7 @@
       return data.items;
     }
 
-    // DOM refs
+    // DOM references
     const spotifyQueryInput = document.getElementById('spotify-query');
     const spotifySearchBtn = document.getElementById('spotify-search-btn');
     const spotifyResultsDiv = document.getElementById('spotify-results');
@@ -197,7 +197,7 @@
             <div>${snippet.title}</div>
           `;
           div.onclick = () => {
-            createYouTubePlayer('youtube-player', vid, { autoplay: true, width: 640, height: 360 });
+            createYouTubePlayer('youtube-player', vid, { autoplay: true });
           };
           youtubeResultsDiv.appendChild(div);
         }
