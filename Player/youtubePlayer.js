@@ -1,33 +1,27 @@
-// spotifyAudio.js
-import { enablePrivacyProtections } from './privacyHelper.js';
-
-export function createSpotifyAudioPlayer(containerId, spotifyUri) {
-  // Kick in privacy guards right away
-  enablePrivacyProtections();
-
+// youtubePlayer.js
+export function createYouTubePlayer(containerId, videoId) {
   const container = document.getElementById(containerId);
   if (!container) {
     console.error(`❌ Container with ID "${containerId}" not found.`);
     return;
   }
 
-  if (!spotifyUri || !spotifyUri.startsWith('spotify:track:')) {
-    console.error('❌ Invalid Spotify URI. Must be in format "spotify:track:TRACK_ID".');
+  if (!videoId || typeof videoId !== 'string') {
+    console.error('❌ Invalid YouTube video ID.');
     return;
   }
 
-  const trackId = spotifyUri.split(':').pop();
-
   container.innerHTML = `
     <iframe
-      src="https://open.spotify.com/embed/track/${trackId}"
       width="300"
-      height="80"
+      height="180"
+      src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1"
       frameborder="0"
-      allow="encrypted-media"
-      allowtransparency="true"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
       sandbox="allow-scripts allow-same-origin allow-presentation"
-      style="border:none; overflow:hidden; border-radius:12px;"
+      style="border:none; border-radius:12px; overflow:hidden;"
+      referrerpolicy="no-referrer"
     ></iframe>
   `;
 }
