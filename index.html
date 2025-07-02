@@ -5,7 +5,6 @@
   <title>BarneyTube & SpotSocial Search+Play</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* your existing styles… */
     body { background: #111; color: #eee; font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
     .search-section { margin-bottom: 2rem; }
     input[type="text"] { padding: 0.5rem; font-size: 1rem; width: 70%; margin-right: 1rem; border-radius: 8px; border: none; background: #222; color: #eee; }
@@ -43,100 +42,119 @@
     import { createSpotifyPlayer } from './Player/spotifyPlayer.js';
     import { createYouTubePlayer } from './Player/youtubePlayer.js';
 
-    // Fallback data in case APIs fail
-    const SPOTIFY_FALLBACK = [
-      { id: '0VjIjW4GlUZAMYd2vXMi3b', name: 'Blinding Lights', artist: 'The Weeknd', img: 'https://i.scdn.co/image/ab67616d0000b2730c17ba4112da8618ab1b8ae1' },
-    ];
+    // Fallback data
     const YOUTUBE_FALLBACK = [
       { videoId: 'dQw4w9WgXcQ', title: 'Never Gonna Give You Up', thumb: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg' },
     ];
 
-    async function searchSpotify(query) {
-      try {
-        const tokenRes = await fetch(`https://accounts.spotify.com/api/token`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Basic ${btoa(config.SPOTIFY_CLIENT_ID + ':' + config.SPOTIFY_CLIENT_SECRET)}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: 'grant_type=client_credentials'
-        });
-        if (!tokenRes.ok) throw new Error();
-        const { access_token } = await tokenRes.json();
-        const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
-          headers: { Authorization: `Bearer ${access_token}` }
-        });
-        if (!res.ok) throw new Error();
-        const { tracks } = await res.json();
-        return tracks.items.map(t => ({
-          id: t.id,
-          name: t.name,
-          artist: t.artists.map(a=>a.name).join(', '),
-          img: t.album.images[0]?.url || ''
-        }));
-      } catch {
-        console.warn('Spotify API failed, using fallback');
-        return SPOTIFY_FALLBACK;
-      }
+    // Spotify unchanged
+    let spotifyToken = null;
+    async function getSpotifyAccessToken() {
+      const creds = btoa(config.SPOTIFY_CLIENT_ID + ':' + config.SPOTIFY_CLIENT_SECRET);
+      const res = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'grant_type=client_credentials'
+      });
+      if (!res.ok) throw new Error('Spotify token error');
+      return (await res.json()).access_token;
+    }
+    async function searchSpotify(query, token) {
+      const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Spotify search error');
+      return (await res.json()).tracks.items.map(t=>({
+        id: t.id,
+        name: t.name,
+        artist: t.artists.map(a=>a.name).join(', '),
+        img: t.album.images[0]?.url||''
+      }));
     }
 
+    // Updated YouTube search
     async function searchYouTube(query) {
-      try {
-        const res = await fetch(
-          `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(query)}&key=${config.GOOGLE_API_KEY}`
-        );
-        if (!res.ok) throw new Error();
-        const { items } = await res.json();
-        return items.map(i=>({
-          videoId: i.id.videoId,
-          title: i.snippet.title,
-          thumb: i.snippet.thumbnails.high.url
-        }));
-      } catch {
-        console.warn('YouTube API failed, using fallback');
+      if (!config.GOOGLE_API_KEY || config.GOOGLE_API_KEY.startsWith('your-')) {
+        console.warn('No valid YouTube API key—using fallback');
         return YOUTUBE_FALLBACK;
       }
+      const url = new URL('https://www.googleapis.com/youtube/v3/search');
+      url.searchParams.set('part','snippet');
+      url.searchParams.set('type','video');
+      url.searchParams.set('maxResults','10');
+      url.searchParams.set('q',query);
+      url.searchParams.set('key',config.GOOGLE_API_KEY);
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`YouTube API error ${res.status}:`, errText);
+        throw new Error(`YouTube API ${res.status}`);
+      }
+      const { items } = await res.json();
+      return items.map(i=>({
+        videoId: i.id.videoId,
+        title: i.snippet.title,
+        thumb: i.snippet.thumbnails.high.url
+      }));
     }
 
-    const el = {
-      spotifyQuery: document.getElementById('spotify-query'),
-      spotifyBtn:   document.getElementById('spotify-search-btn'),
-      spotifyRes:   document.getElementById('spotify-results'),
-      spotifyPly:   document.getElementById('spotify-player'),
-      ytQuery:      document.getElementById('youtube-query'),
-      ytBtn:        document.getElementById('youtube-search-btn'),
-      ytRes:        document.getElementById('youtube-results'),
-      ytPly:        document.getElementById('youtube-player'),
+    // DOM refs
+    const spotifyQueryInput = document.getElementById('spotify-query');
+    const spotifySearchBtn = document.getElementById('spotify-search-btn');
+    const spotifyResultsDiv = document.getElementById('spotify-results');
+
+    const youtubeQueryInput = document.getElementById('youtube-query');
+    const youtubeSearchBtn = document.getElementById('youtube-search-btn');
+    const youtubeResultsDiv = document.getElementById('youtube-results');
+
+    // Spotify handler
+    spotifySearchBtn.onclick = async () => {
+      const q = spotifyQueryInput.value.trim();
+      if (!q) return;
+      spotifyResultsDiv.innerHTML = 'Loading...';
+      try {
+        if (!spotifyToken) spotifyToken = await getSpotifyAccessToken();
+        const tracks = await searchSpotify(q, spotifyToken);
+        spotifyResultsDiv.innerHTML = tracks.length ? '' : 'No results found.';
+        tracks.forEach(t=>{
+          const div = document.createElement('div');
+          div.className = 'result-item';
+          div.innerHTML = `<img src="${t.img}" alt="${t.name}"/><div>${t.name} — ${t.artist}</div>`;
+          div.onclick = ()=> createSpotifyPlayer('spotify-player', `spotify:track:${t.id}`);
+          spotifyResultsDiv.appendChild(div);
+        });
+      } catch(e){
+        spotifyResultsDiv.innerHTML = `Error: ${e.message}`;
+      }
     };
 
-    el.spotifyBtn.onclick = async () => {
-      const q = el.spotifyQuery.value.trim();
+    // YouTube handler
+    youtubeSearchBtn.onclick = async () => {
+      const q = youtubeQueryInput.value.trim();
       if (!q) return;
-      el.spotifyRes.innerHTML = 'Loading...';
-      const tracks = await searchSpotify(q);
-      el.spotifyRes.innerHTML = tracks.length ? '' : 'No results found.';
-      tracks.forEach(t => {
-        const div = document.createElement('div');
-        div.className = 'result-item';
-        div.innerHTML = `<img src="${t.img}" alt="${t.name}"/><div>${t.name} — ${t.artist}</div>`;
-        div.onclick = ()=> createSpotifyPlayer('spotify-player', `spotify:track:${t.id}`);
-        el.spotifyRes.appendChild(div);
-      });
-    };
-
-    el.ytBtn.onclick = async () => {
-      const q = el.ytQuery.value.trim();
-      if (!q) return;
-      el.ytRes.innerHTML = 'Loading...';
-      const vids = await searchYouTube(q);
-      el.ytRes.innerHTML = vids.length ? '' : 'No results found.';
-      vids.forEach(v => {
-        const div = document.createElement('div');
-        div.className = 'result-item';
-        div.innerHTML = `<img src="${v.thumb}" alt="${v.title}"/><div>${v.title}</div>`;
-        div.onclick = ()=> createYouTubePlayer('youtube-player', v.videoId, { autoplay: true });
-        el.ytRes.appendChild(div);
-      });
+      youtubeResultsDiv.innerHTML = 'Loading...';
+      try {
+        const vids = await searchYouTube(q);
+        youtubeResultsDiv.innerHTML = vids.length ? '' : 'No results found.';
+        vids.forEach(v=>{
+          const div = document.createElement('div');
+          div.className = 'result-item';
+          div.innerHTML = `<img src="${v.thumb}" alt="${v.title}"/><div>${v.title}</div>`;
+          div.onclick = ()=> createYouTubePlayer('youtube-player', v.videoId, { autoplay: true });
+          youtubeResultsDiv.appendChild(div);
+        });
+      } catch(e) {
+        youtubeResultsDiv.innerHTML = `Error: ${e.message}`;
+        // fallback UI
+        YOUTUBE_FALLBACK.forEach(v=>{
+          const div = document.createElement('div');
+          div.className = 'result-item';
+          div.innerHTML = `<img src="${v.thumb}" alt="${v.title}"/><div>${v.title}</div>`;
+          div.onclick = ()=> createYouTubePlayer('youtube-player', v.videoId, { autoplay: true });
+          youtubeResultsDiv.appendChild(div);
+        });
+      }
     };
   </script>
 </body>
