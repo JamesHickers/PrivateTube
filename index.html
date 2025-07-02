@@ -86,8 +86,8 @@
 </main>
 
 <script>
-  const API_KEY = 'AIzaSyBTAUqNqfuq6WioNjs8TnO1UkobOdMIc1Y';
-  const CLIENT_ID = '1066455750829-i1uj1lmpo2uoil9r2ku7mvpn73c2ga5e.apps.googleusercontent.com';
+  const API_KEY = process.env.GOOGLE_API_KEY;
+  const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"];
   const SCOPES = "https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.force-ssl";
 
