@@ -1,24 +1,22 @@
-// runTokens.js
 import { getSpotifyAccessToken } from './spotifyToken.js';
-import { getYouTubeAccessToken } from './youtubeToken.js';
+import { getYouTubeAccessToken } from './youTubeToken.js';
 
 (async () => {
   try {
-    // Spotify token — no args needed, grabs secrets from process.env internally
     const spotifyToken = await getSpotifyAccessToken();
-    console.log('Spotify Access Token:', spotifyToken);
+    console.log('Spotify Token:', spotifyToken);
 
-    // YouTube token — you MUST provide a real code and redirect URI from OAuth flow
-    const oauthCode = process.env.YOUTUBE_OAUTH_CODE || 'your-oauth-code-here';
-    const redirectUri = process.env.YOUTUBE_REDIRECT_URI || 'https://krynet.ai';
+    const code = process.env.YOUTUBE_OAUTH_CODE;
+    const redirectUri = process.env.YOUTUBE_REDIRECT_URI;
 
-    if (oauthCode === 'your-oauth-code-here' || redirectUri === 'your-redirect-uri-here') {
-      console.log('YouTube OAuth code or redirect URI missing. Skipping YouTube token fetch.');
+    if (code && redirectUri) {
+      const yt = await getYouTubeAccessToken(code, redirectUri);
+      console.log('YouTube Token:', yt.access_token);
     } else {
-      const youtubeTokenData = await getYouTubeAccessToken(oauthCode, redirectUri);
-      console.log('YouTube Token Data:', youtubeTokenData);
+      console.log('YouTube skipped: no code or redirect URI in env');
     }
   } catch (err) {
-    console.error('Error:', err);
+    console.error('Error:', err.message);
+    process.exit(1);
   }
 })();
