@@ -2,37 +2,169 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BarneyTube Embed</title>
+  <title>BarneyTube – Private YouTube Frontend</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://apis.google.com/js/api.js"></script>
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      height: 100%;
       background: #121212;
       color: #eee;
+      font-family: Arial, sans-serif;
+    }
+    header {
+      padding: 1rem;
+      background: #1f1f1f;
       display: flex;
+      gap: 0.5rem;
       justify-content: center;
       align-items: center;
     }
+    input[type="text"] {
+      width: 60%;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 9999px;
+      background: #222;
+      color: #eee;
+    }
+    button {
+      padding: 0.5rem 1.2rem;
+      border: none;
+      border-radius: 9999px;
+      background: #bb86fc;
+      color: #121212;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    main {
+      max-width: 960px;
+      margin: 1rem auto;
+      padding: 0 1rem;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .video {
+      background: #1e1e1e;
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .video img {
+      width: 100%;
+    }
+    .info {
+      padding: 0.6rem;
+    }
+    .info h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
     iframe {
-      width: 80vw;
-      height: 45vw;
-      max-width: 1280px;
-      max-height: 720px;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: none;
+      margin-bottom: 2rem;
       border-radius: 12px;
-      box-shadow: 0 0 20px #000;
     }
   </style>
 </head>
 <body>
-  <iframe
-    src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1"
-    title="YouTube video player"
-    frameborder="0"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-    allowfullscreen
-    sandbox="allow-scripts allow-same-origin allow-presentation">
-  </iframe>
+
+<header>
+  <button onclick="handleAuthClick()">Sign In</button>
+  <input type="text" id="searchInput" placeholder="Search YouTube..." />
+  <button onclick="searchVideos()">Search</button>
+</header>
+
+<main>
+  <div id="playerContainer"></div>
+  <div class="results" id="resultsContainer"></div>
+</main>
+
+<script>
+  const API_KEY = 'YOUR_YOUTUBE_API_KEY_HERE';
+  const CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
+  const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"];
+  const SCOPES = "https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.force-ssl";
+
+  let gapiInited = false;
+
+  function gapiLoaded() {
+    gapi.load("client:auth2", initializeGapiClient);
+  }
+
+  async function initializeGapiClient() {
+    await gapi.client.init({
+      apiKey: API_KEY,
+      clientId: CLIENT_ID,
+      discoveryDocs: DISCOVERY_DOCS,
+      scope: SCOPES,
+    });
+    gapiInited = true;
+  }
+
+  function handleAuthClick() {
+    gapi.auth2.getAuthInstance().signIn();
+  }
+
+  const searchInput = document.getElementById("searchInput");
+  const resultsContainer = document.getElementById("resultsContainer");
+  const playerContainer = document.getElementById("playerContainer");
+
+  async function searchVideos() {
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    playerContainer.innerHTML = "";
+    resultsContainer.innerHTML = "<p>Loading...</p>";
+
+    const res = await gapi.client.youtube.search.list({
+      part: "snippet",
+      type: "video",
+      q: query,
+      maxResults: 12
+    });
+
+    const videos = res.result.items;
+    renderResults(videos);
+  }
+
+  function renderResults(videos) {
+    resultsContainer.innerHTML = "";
+    videos.forEach(video => {
+      const vid = video.id.videoId;
+      const title = video.snippet.title;
+      const thumbnail = video.snippet.thumbnails.high.url;
+
+      const div = document.createElement("div");
+      div.className = "video";
+      div.innerHTML = `
+        <img src="${thumbnail}" alt="${title}">
+        <div class="info">
+          <h3>${title}</h3>
+        </div>
+      `;
+      div.onclick = () => playVideo(vid);
+      resultsContainer.appendChild(div);
+    });
+  }
+
+  function playVideo(videoId) {
+    playerContainer.innerHTML = `
+      <iframe 
+        src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        sandbox="allow-scripts allow-same-origin allow-presentation"
+      ></iframe>
+    `;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  gapiLoaded();
+</script>
 </body>
 </html>
