@@ -1,3 +1,4 @@
+// youTubeToken.js
 import fetch from 'node-fetch';
 
 export async function getYouTubeAccessToken(code, redirectUri) {
@@ -25,16 +26,10 @@ export async function getYouTubeAccessToken(code, redirectUri) {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get YouTube token: ${await response.text()}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to get YouTube token: ${errorText}`);
   }
 
   const data = await response.json();
-    data = {
-      access_token: "...",
-      expires_in: 3599,
-      refresh_token: "...",
-      scope: "...",
-      token_type: "Bearer"
-    }
   return data;
 }
