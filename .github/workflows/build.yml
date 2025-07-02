@@ -30,17 +30,21 @@ jobs:
 
       - name: Inject frontend config
         env:
-          GOOGLE_API_KEY:      ${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_API_KEY:      ${{ vars.GOOGLE_API_KEY }}
           GOOGLE_CLIENT_ID:    ${{ vars.GOOGLE_CLIENT_ID }}
-          SPOTIFY_CLIENT_ID:   ${{ secrets.SPOTIFY_CLIENT_ID }}
-          SPOTIFY_CLIENT_SECRET:${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_CLIENT_ID:   ${{ vars.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_CLIENT_ID_APP: ${{ vars.SPOTIFY_CLIENT_ID_APP }}
+          SPOTIFY_SECRET_ID_APP: ${{ secrets.SPOTIFY_SECRET_ID_APP }}
         run: |
           cat > config.js <<EOF
 export const config = {
   GOOGLE_API_KEY: "${GOOGLE_API_KEY}",
   GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}",
   SPOTIFY_CLIENT_ID: "${SPOTIFY_CLIENT_ID}",
-  SPOTIFY_CLIENT_SECRET: "${SPOTIFY_CLIENT_SECRET}"
+  SPOTIFY_CLIENT_SECRET: "${SPOTIFY_CLIENT_SECRET}",
+  SPOTIFY_CLIENT_ID_APP: "${SPOTIFY_CLIENT_ID}",
+  SPOTIFY_CLIENT_SECRET_ID_APP: "SPOTIFY_SECRET_ID_APP"
 };
 EOF
 
