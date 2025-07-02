@@ -4,5 +4,7 @@ export const config = {
   GOOGLE_CLIENT_ID: 'your-google-client-id-here',
   GOOGLE_CLIENT_SECRET: 'your-google-client-secret-here',
   SPOTIFY_CLIENT_ID: 'your-spotify-client-id-here',
-  SPOTIFY_CLIENT_SECRET: 'your-spotify-client-secret-here'
+  SPOTIFY_CLIENT_SECRET: 'your-spotify-client-secret-here',
+  SPOTIFY_CLIENT_SECRET_APP: '',
+  SPOTIFY_CLIENT_ID_APP: '',
 };
