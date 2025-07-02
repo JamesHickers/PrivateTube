@@ -26,19 +26,26 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Inject frontend config
+        env:
+          GOOGLE_API_KEY:      ${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_CLIENT_ID:    ${{ vars.GOOGLE_CLIENT_ID }}
+          SPOTIFY_CLIENT_ID:   ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET:${{ secrets.SPOTIFY_CLIENT_SECRET }}
         run: |
-          mkdir -p ./src
-          cat > ./src/config.js <<EOF
-          export const config = {
-            GOOGLE_API_KEY: '${{ secrets.GOOGLE_API_KEY }}',
-            GOOGLE_CLIENT_ID: '${{ vars.GOOGLE_CLIENT_ID }}',
-            SPOTIFY_CLIENT_ID: '${{ vars.SPOTIFY_CLIENT_ID }}',
-            SPOTIFY_CLIENT_SECRET: '${{ secrets.SPOTIFY_CLIENT_SECRET }}'
-          };
-          EOF
+          cat > config.js <<EOF
+export const config = {
+  GOOGLE_API_KEY: "${GOOGLE_API_KEY}",
+  GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}",
+  SPOTIFY_CLIENT_ID: "${SPOTIFY_CLIENT_ID}",
+  SPOTIFY_CLIENT_SECRET: "${SPOTIFY_CLIENT_SECRET}"
+};
+EOF
+
+      - name: Show config.js contents
+        run: cat config.js
 
       - name: Build project
         run: npm run build
