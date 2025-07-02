@@ -1,4 +1,5 @@
-// spotifyToken.js
+import fetch from 'node-fetch';
+
 export async function getSpotifyAccessToken() {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
@@ -7,7 +8,6 @@ export async function getSpotifyAccessToken() {
     throw new Error('Missing Spotify client ID or secret in environment variables');
   }
 
-  // Node.js base64 encode
   const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   const res = await fetch('https://accounts.spotify.com/api/token', {
