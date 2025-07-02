@@ -1,6 +1,4 @@
 // spotifyToken.js
-import fetch from 'node-fetch'; // Remove this if your Node version supports global fetch
-
 export async function getSpotifyAccessToken() {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
