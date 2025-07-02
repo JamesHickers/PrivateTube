@@ -1,19 +1,30 @@
-name: Inject Secrets into JS
+name: Run Player
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  inject-secrets:
+  run-player:
     runs-on: ubuntu-latest
+
+    env:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      SPOTFY_CLIENT_ID: ${{ secrets.SPOTFY_CLIENT_ID }}
+      SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Create secrets.js
-        run: |
-          mkdir -p src
-          echo "export const GOOGLE_API_KEY = '${{ secrets.GOOGLE_API_KEY }}
-          echo "export const SPOTIFY_CLIENT_ID = '${{ secrets.SPOTIFY_CLIENT_ID }}'
-          echo "export const SPOTIFY_CLIENT_SECRET = '${{ secrets.SPOTIFY_CLIENT_SECRET }}'
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm install
+
+      - name: Run player script
+        run: node player.js
