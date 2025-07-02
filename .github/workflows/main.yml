@@ -10,10 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
       SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
 
     steps:
       - uses: actions/checkout@v3
@@ -21,10 +20,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: '20'
 
-      - name: Install dependencies
-        run: npm install
+      - run: npm install
 
-      - name: Run player script
-        run: node player.js
+      - run: node player.js
