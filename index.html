@@ -1,103 +1,278 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BarneyTube Lite - Just Video Player</title>
-<style>
-  body {
-    background: #121212;
-    color: #eee;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0; padding: 2rem;
-    display: flex; flex-direction: column; align-items: center;
-  }
-  input[type="text"] {
-    width: 300px;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    border: none;
-    outline: none;
-    font-size: 1rem;
-    margin-bottom: 1rem;
-  }
-  button {
-    padding: 0.5rem 1.5rem;
-    border-radius: 9999px;
-    border: none;
-    background: #bb86fc;
-    color: #121212;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  button:hover {
-    background: #9a64d1;
-  }
-  .player {
-    margin-top: 2rem;
-    width: 90vw;
-    max-width: 800px;
-    aspect-ratio: 16 / 9;
-    background: black;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BarneyTube 2.0 - Privacy YouTube Frontend</title>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background: #121212;
+      color: #eee;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background: #1f1f1f;
+      padding: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    input[type="search"] {
+      flex-grow: 1;
+      max-width: 600px;
+      padding: 0.6rem 1rem;
+      border-radius: 9999px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      background: #222;
+      color: #eee;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      border-radius: 9999px;
+      border: none;
+      background: #bb86fc;
+      color: #121212;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      user-select: none;
+    }
+    button:hover {
+      background: #9a64d1;
+    }
+    main {
+      flex-grow: 1;
+      max-width: 960px;
+      margin: 1rem auto;
+      padding: 0 1rem;
+      width: 100%;
+    }
+    .video-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
+      gap: 1rem;
+    }
+    .video-card {
+      background: #222;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s ease;
+    }
+    .video-card:hover {
+      transform: scale(1.03);
+    }
+    .thumbnail {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background: #333;
+    }
+    .video-info {
+      padding: 0.6rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .video-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 0.3rem 0;
+      line-height: 1.2;
+      flex-grow: 1;
+    }
+    .video-channel {
+      font-size: 0.85rem;
+      color: #aaa;
+      user-select: text;
+    }
+    .player {
+      margin-top: 2rem;
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      max-width: 960px;
+      background: black;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 10px #333;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .footer {
+      text-align: center;
+      padding: 1rem 0;
+      font-size: 0.9rem;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
-  <h1>BarneyTube Lite</h1>
-  <input id="videoInput" type="text" placeholder="Paste YouTube or Piped video URL or ID" />
-  <button id="playBtn">Play Video</button>
+  <header>
+    <input id="searchInput" type="search" placeholder="Search YouTube videos (uses DuckDuckGo)..." aria-label="Search videos" />
+    <button id="searchBtn" aria-label="Search button">Search</button>
+  </header>
+  <main>
+    <div id="videoList" class="video-list"></div>
+    <div id="player" class="player" style="display:none;"></div>
+  </main>
+  <div class="footer">
+    Built by Barney | Powered by <a href="https://duckduckgo.com" target="_blank" rel="noopener noreferrer" style="color:#bb86fc;">DuckDuckGo</a> &amp; <a href="https://piped.kavin.rocks" target="_blank" rel="noopener noreferrer" style="color:#bb86fc;">Piped</a>
+  </div>
 
-  <div id="player" class="player" style="display:none;"></div>
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const videoList = document.getElementById('videoList');
+  const player = document.getElementById('player');
 
-  <script>
-    const videoInput = document.getElementById('videoInput');
-    const playBtn = document.getElementById('playBtn');
-    const player = document.getElementById('player');
+  // DuckDuckGo JSON API endpoint for !yt bang search
+  // We'll fetch from https://api.duckduckgo.com/?q=!yt QUERY&format=json&no_redirect=1&no_html=1
+  // Note: No CORS on ddg JSON API, so we must use a public CORS proxy or JSONP hack
 
-    playBtn.addEventListener('click', () => {
-      let val = videoInput.value.trim();
-      if (!val) return alert('Enter a video URL or ID.');
+  // Using a public CORS proxy (free, may be slow/unreliable, but no backend)
+  const CORS_PROXY = 'https://corsproxy.io/?';
 
-      // Extract video ID from YouTube or Piped URL or raw ID
-      let videoId = extractVideoId(val);
-      if (!videoId) return alert('Invalid YouTube or Piped video URL or ID.');
+  searchBtn.addEventListener('click', () => {
+    const query = searchInput.value.trim();
+    if (!query) return alert('Enter a search query');
+    searchVideos(query);
+  });
 
-      // Show Piped embed iframe (privacy friendly, no Google trackers)
-      player.style.display = 'block';
-      player.innerHTML = `
-        <iframe 
-          src="https://piped.kavin.rocks/embed/${videoId}" 
-          allowfullscreen 
-          allow="autoplay" 
-          title="Video player"></iframe>`;
-      player.scrollIntoView({ behavior: 'smooth' });
-    });
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') searchBtn.click();
+  });
 
-    function extractVideoId(urlOrId) {
-      // If input looks like pure ID (11 chars, YouTube style)
-      if (/^[\w-]{11}$/.test(urlOrId)) return urlOrId;
+  async function searchVideos(query) {
+    videoList.innerHTML = '<p>Loading...</p>';
+    player.style.display = 'none';
 
-      // Try to extract ID from YouTube URL
-      let ytMatch = urlOrId.match(/[?&]v=([\w-]{11})/);
-      if (ytMatch) return ytMatch[1];
+    try {
+      // Compose DuckDuckGo query for YouTube bang
+      const ddgQuery = `!yt ${query}`;
 
-      // Try short URL youtu.be/ID
-      let shortMatch = urlOrId.match(/youtu\.be\/([\w-]{11})/);
-      if (shortMatch) return shortMatch[1];
+      // Fetch DuckDuckGo Instant Answer JSON with CORS proxy
+      const res = await fetch(`${CORS_PROXY}https://api.duckduckgo.com/?q=${encodeURIComponent(ddgQuery)}&format=json&no_redirect=1&no_html=1`);
+      if (!res.ok) throw new Error('Network error ' + res.status);
+      const data = await res.json();
 
-      // Try Piped URL piped.kavin.rocks/watch/ID
-      let pipedMatch = urlOrId.match(/piped\.kavin\.rocks\/watch\/([\w-]{11})/);
-      if (pipedMatch) return pipedMatch[1];
+      // data.RelatedTopics contains results but they’re often a mixed bag
+      // Instead, we parse data.AbstractURL or data.Results or data.RelatedTopics
 
-      return null;
+      // We'll try to parse RelatedTopics that link to YouTube videos
+
+      const videos = [];
+
+      if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+        // Sometimes RelatedTopics is nested array
+        const topics = flattenRelatedTopics(data.RelatedTopics);
+        for (const t of topics) {
+          if (t.FirstURL && t.FirstURL.includes('youtube.com/watch?v=')) {
+            const videoId = extractVideoId(t.FirstURL);
+            if (videoId) {
+              videos.push({
+                title: t.Text,
+                videoId,
+                author: { name: 'YouTube' },
+                thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+              });
+            }
+          }
+        }
+      }
+
+      if (videos.length === 0) {
+        videoList.innerHTML = '<p>No videos found.</p>';
+        return;
+      }
+
+      renderVideoList(videos);
+
+    } catch (err) {
+      videoList.innerHTML = `<p style="color:#f88;">Error: ${escapeHTML(err.message)}</p>`;
     }
-  </script>
+  }
+
+  function flattenRelatedTopics(topics) {
+    // flatten nested RelatedTopics arrays into one flat array
+    let result = [];
+    for (const t of topics) {
+      if (t.Topics) {
+        result = result.concat(flattenRelatedTopics(t.Topics));
+      } else {
+        result.push(t);
+      }
+    }
+    return result;
+  }
+
+  function renderVideoList(videos) {
+    videoList.innerHTML = '';
+    videos.forEach(video => {
+      const card = document.createElement('div');
+      card.className = 'video-card';
+      card.tabIndex = 0;
+      card.innerHTML = `
+        <img class="thumbnail" src="${video.thumbnail}" alt="Thumbnail of ${escapeHTML(video.title)}" />
+        <div class="video-info">
+          <h3 class="video-title">${escapeHTML(video.title)}</h3>
+          <p class="video-channel">${escapeHTML(video.author.name)}</p>
+        </div>`;
+      card.onclick = () => playVideo(video.videoId);
+      card.onkeypress = e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          playVideo(video.videoId);
+          e.preventDefault();
+        }
+      };
+      videoList.appendChild(card);
+    });
+  }
+
+  function playVideo(videoId) {
+    player.style.display = 'block';
+    player.innerHTML = `
+      <iframe
+        src="https://piped.kavin.rocks/embed/${videoId}?autoplay=1"
+        allowfullscreen
+        allow="autoplay"
+        title="Video player"></iframe>`;
+    player.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function extractVideoId(url) {
+    let match = url.match(/[?&]v=([\w-]{11})/);
+    if (match) return match[1];
+    match = url.match(/youtu\.be\/([\w-]{11})/);
+    if (match) return match[1];
+    return null;
+  }
+
+  function escapeHTML(str) {
+    return str.replace(/[&<>"']/g, m => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[m]);
+  }
+</script>
 </body>
 </html>
