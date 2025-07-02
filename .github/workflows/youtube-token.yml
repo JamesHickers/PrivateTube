@@ -1,0 +1,41 @@
+name: Run YouTube Token
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  get-youtube-token:
+    runs-on: ubuntu-latest
+
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      YOUTUBE_OAUTH_CODE: ${{ secrets.YOUTUBE_OAUTH_CODE }}
+      YOUTUBE_REDIRECT_URI: ${{ secrets.YOUTUBE_REDIRECT_URI }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_REPO: ${{ github.repository }}
+      GITHUB_RUN_ID: ${{ github.run_id }}
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Log GitHub context
+        run: |
+          echo "Actor: $GITHUB_ACTOR"
+          echo "Repo: $GITHUB_REPO"
+          echo "Run ID: $GITHUB_RUN_ID"
+
+      - name: Run YouTube Token Script
+        run: node runYouTube.js
