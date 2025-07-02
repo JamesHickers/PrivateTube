@@ -1,12 +1,9 @@
-name: Run Player
+name: Any Job
 
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 jobs:
-  run-player:
+  example:
     runs-on: ubuntu-latest
 
     env:
@@ -15,13 +12,4 @@ jobs:
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
 
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - run: npm install
-
-      - run: node player.js
+      - run: echo "Env vars are set, and available as process.env in Node"
