@@ -17,35 +17,37 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Inject frontend config
-      run: |
-        mkdir -p public
-        echo "export const config = {" > config.js
-        echo "  GOOGLE_API_KEY: '${{ secrets.GOOGLE_API_KEY }}'," >> config.js
-        echo "  GOOGLE_CLIENT_ID: '${{ vars.GOOGLE_CLIENT_ID }}'," >> config.js
-        echo "  SPOTIFY_CLIENT_ID: '${{ vars.SPOTIFY_CLIENTID }}'" >> config.js
-        echo "};" >> config.js
-        echo "  SPOTIFY_CLIENT_SECRET: '${{ secrets.SPOTIFY_CLIENT_SECRET }}'" >> config.js
+      - name: Inject frontend config
+        run: |
+          mkdir -p ./src
+          cat > ./src/config.js <<EOF
+          export const config = {
+            GOOGLE_API_KEY: '${{ secrets.GOOGLE_API_KEY }}',
+            GOOGLE_CLIENT_ID: '${{ vars.GOOGLE_CLIENT_ID }}',
+            SPOTIFY_CLIENT_ID: '${{ vars.SPOTIFY_CLIENT_ID }}',
+            SPOTIFY_CLIENT_SECRET: '${{ secrets.SPOTIFY_CLIENT_SECRET }}'
+          };
+          EOF
 
-    - name: Build project
-      run: npm run build
+      - name: Build project
+        run: npm run build
 
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: ./dist
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
 
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
