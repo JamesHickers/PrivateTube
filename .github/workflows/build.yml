@@ -31,10 +31,12 @@ jobs:
     - name: Inject frontend config
       run: |
         mkdir -p public
-        echo "export const config = {" > public/config.js
-        echo "  GOOGLE_CLIENT_ID: '${{ vars.GOOGLE_CLIENT_ID }}'," >> public/config.js
-        echo "  SPOTIFY_CLIENT_ID: '${{ vars.SPOTIFY_CLIENTID }}'" >> public/config.js
-        echo "};" >> public/config.js
+        echo "export const config = {" > config.js
+        echo "  GOOGLE_API_KEY: '${{ secrets.GOOGLE_API_KEY }}'," >> config.js
+        echo "  GOOGLE_CLIENT_ID: '${{ vars.GOOGLE_CLIENT_ID }}'," >> config.js
+        echo "  SPOTIFY_CLIENT_ID: '${{ vars.SPOTIFY_CLIENTID }}'" >> config.js
+        echo "};" >> config.js
+        echo "  SPOTIFY_CLIENT_SECRET: '${{ secrets.SPOTIFY_CLIENT_SECRET }}'" >> config.js
 
     - name: Build project
       run: npm run build
