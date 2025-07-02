@@ -1,6 +1,4 @@
 // youTubeToken.js
-import fetch from 'node-fetch'; // remove if your Node has global fetch
-
 export async function getYouTubeAccessToken(code, redirectUri) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
