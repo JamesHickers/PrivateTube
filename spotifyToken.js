@@ -1,4 +1,6 @@
 // spotifyToken.js
+import fetch from 'node-fetch'; // Remove this if your Node version supports global fetch
+
 export async function getSpotifyAccessToken() {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
@@ -7,9 +9,8 @@ export async function getSpotifyAccessToken() {
     throw new Error('Missing Spotify client ID or secret in environment variables');
   }
 
-  const creds = btoa(`${clientId}:${clientSecret}`); // browser way of base64 encode
-  // If you run this in Node.js, use Buffer.from().toString('base64') instead:
-  // const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  // Node.js base64 encode
+  const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
