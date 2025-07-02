@@ -1,12 +1,25 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
 jobs:
   build:
     runs-on: ubuntu-latest
-  env:
-  GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
-  GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-  SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID }}
-  SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+    environment: github-pages  # 👈 THIS IS THE KEY
+
+    env:
+      GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID }}
+      SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+
     steps:
       - uses: actions/checkout@v3
-      - name: Build project
-        run: npm run build
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run a script that uses secrets
+        run: node spotifyToken.js
