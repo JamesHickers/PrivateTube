@@ -1,4 +1,4 @@
-const apiKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_CLIENT_ID;
+const apiKey = process.env.GOOGLE_CLIENT_ID;
 
 if (!apiKey) {
   console.error('❌ No YouTube API key found. Set GOOGLE_API_KEY or GOOGLE_CLIENT_ID as env vars.');
