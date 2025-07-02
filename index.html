@@ -1,235 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BarneyTube - Privacy YouTube Clone</title>
-  <style>
-    body {
-      margin: 0; padding: 0;
-      background: #121212;
-      color: #eee;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    header {
-      background: #1f1f1f;
-      padding: 1rem;
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      align-items: center;
-      flex-wrap: wrap;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
-    input[type="search"] {
-      flex-grow: 1;
-      max-width: 600px;
-      padding: 0.6rem 1rem;
-      border-radius: 9999px;
-      border: none;
-      outline: none;
-      font-size: 1rem;
-      background: #222;
-      color: #eee;
-    }
-    button {
-      padding: 0.6rem 1.2rem;
-      border-radius: 9999px;
-      border: none;
-      background: #bb86fc;
-      color: #121212;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s ease;
-      user-select: none;
-    }
-    button:hover {
-      background: #9a64d1;
-    }
-    main {
-      flex-grow: 1;
-      max-width: 960px;
-      margin: 1rem auto;
-      padding: 0 1rem;
-      width: 100%;
-    }
-    .video-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
-      gap: 1rem;
-    }
-    .video-card {
-      background: #222;
-      border-radius: 8px;
-      overflow: hidden;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.15s ease;
-    }
-    .video-card:hover {
-      transform: scale(1.03);
-    }
-    .thumbnail {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      background: #333;
-    }
-    .video-info {
-      padding: 0.6rem;
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .video-title {
-      font-size: 1rem;
-      font-weight: 600;
-      margin: 0 0 0.3rem 0;
-      line-height: 1.2;
-      flex-grow: 1;
-    }
-    .video-channel {
-      font-size: 0.85rem;
-      color: #aaa;
-    }
-    .player {
-      margin-top: 2rem;
-      aspect-ratio: 16 / 9;
-      width: 100%;
-      max-width: 960px;
-      background: black;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 10px #333;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-    .footer {
-      text-align: center;
-      padding: 1rem 0;
-      font-size: 0.9rem;
-      color: #666;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BarneyTube Lite - Just Video Player</title>
+<style>
+  body {
+    background: #121212;
+    color: #eee;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 2rem;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  input[type="text"] {
+    width: 300px;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  button {
+    padding: 0.5rem 1.5rem;
+    border-radius: 9999px;
+    border: none;
+    background: #bb86fc;
+    color: #121212;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #9a64d1;
+  }
+  .player {
+    margin-top: 2rem;
+    width: 90vw;
+    max-width: 800px;
+    aspect-ratio: 16 / 9;
+    background: black;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+</style>
 </head>
 <body>
-  <header>
-    <input id="searchInput" type="search" placeholder="Search videos..." aria-label="Search videos" />
-    <button id="searchBtn" aria-label="Search button">Search</button>
-  </header>
-  <main>
-    <div id="videoList" class="video-list"></div>
-    <div id="player" class="player" style="display:none;"></div>
-  </main>
-  <div class="footer">
-    Built by Barney | Powered by <a href="https://piped.kavin.rocks" target="_blank" rel="noopener noreferrer" style="color:#bb86fc;">Piped API</a>
-  </div>
+  <h1>BarneyTube Lite</h1>
+  <input id="videoInput" type="text" placeholder="Paste YouTube or Piped video URL or ID" />
+  <button id="playBtn">Play Video</button>
+
+  <div id="player" class="player" style="display:none;"></div>
 
   <script>
-    const searchInput = document.getElementById('searchInput');
-    const searchBtn = document.getElementById('searchBtn');
-    const videoList = document.getElementById('videoList');
+    const videoInput = document.getElementById('videoInput');
+    const playBtn = document.getElementById('playBtn');
     const player = document.getElementById('player');
 
-    // Switched to a more reliable public Piped API instance
-    const API_BASE = 'https://pipedproxy.kavin.rocks/api/v1';
+    playBtn.addEventListener('click', () => {
+      let val = videoInput.value.trim();
+      if (!val) return alert('Enter a video URL or ID.');
 
-    searchBtn.addEventListener('click', () => {
-      const query = searchInput.value.trim();
-      if (!query) {
-        alert('Please enter a search term.');
-        return;
-      }
-      searchVideos(query);
-    });
+      // Extract video ID from YouTube or Piped URL or raw ID
+      let videoId = extractVideoId(val);
+      if (!videoId) return alert('Invalid YouTube or Piped video URL or ID.');
 
-    // Enable pressing Enter key to search
-    searchInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') searchBtn.click();
-    });
-
-    async function searchVideos(query) {
-      videoList.innerHTML = '<p>Loading...</p>';
-      player.style.display = 'none';
-      try {
-        const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
-
-        // Check if response is JSON or HTML (error page)
-        const contentType = res.headers.get('content-type');
-        if (!res.ok) throw new Error(`Network error: ${res.status}`);
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await res.text();
-          throw new Error('API returned non-JSON data: ' + text.slice(0, 200));
-        }
-
-        const data = await res.json();
-
-        if (!data.videos || data.videos.length === 0) {
-          videoList.innerHTML = '<p>No videos found.</p>';
-          return;
-        }
-
-        renderVideoList(data.videos);
-      } catch (err) {
-        videoList.innerHTML = `<p style="color:#f88;">Error: ${escapeHTML(err.message)}</p>`;
-      }
-    }
-
-    function renderVideoList(videos) {
-      videoList.innerHTML = '';
-      videos.forEach(video => {
-        const card = document.createElement('div');
-        card.className = 'video-card';
-        card.tabIndex = 0; // make it keyboard accessible
-        card.innerHTML = `
-          <img class="thumbnail" src="${video.thumbnail}" alt="Thumbnail of ${escapeHTML(video.title)}" />
-          <div class="video-info">
-            <h3 class="video-title">${escapeHTML(video.title)}</h3>
-            <p class="video-channel">${escapeHTML(video.author.name)}</p>
-          </div>
-        `;
-        card.onclick = () => playVideo(video.videoId);
-        card.onkeypress = (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            playVideo(video.videoId);
-            e.preventDefault();
-          }
-        };
-        videoList.appendChild(card);
-      });
-    }
-
-    function playVideo(videoId) {
+      // Show Piped embed iframe (privacy friendly, no Google trackers)
       player.style.display = 'block';
-      player.innerHTML = `<iframe
-          src="https://piped.kavin.rocks/embed/${videoId}"
-          allowfullscreen
-          allow="autoplay"
-          title="Video player">
-        </iframe>`;
+      player.innerHTML = `
+        <iframe 
+          src="https://piped.kavin.rocks/embed/${videoId}" 
+          allowfullscreen 
+          allow="autoplay" 
+          title="Video player"></iframe>`;
       player.scrollIntoView({ behavior: 'smooth' });
-    }
+    });
 
-    function escapeHTML(str) {
-      return str.replace(/[&<>"']/g, function(match) {
-        return ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#39;'
-        })[match];
-      });
+    function extractVideoId(urlOrId) {
+      // If input looks like pure ID (11 chars, YouTube style)
+      if (/^[\w-]{11}$/.test(urlOrId)) return urlOrId;
+
+      // Try to extract ID from YouTube URL
+      let ytMatch = urlOrId.match(/[?&]v=([\w-]{11})/);
+      if (ytMatch) return ytMatch[1];
+
+      // Try short URL youtu.be/ID
+      let shortMatch = urlOrId.match(/youtu\.be\/([\w-]{11})/);
+      if (shortMatch) return shortMatch[1];
+
+      // Try Piped URL piped.kavin.rocks/watch/ID
+      let pipedMatch = urlOrId.match(/piped\.kavin\.rocks\/watch\/([\w-]{11})/);
+      if (pipedMatch) return pipedMatch[1];
+
+      return null;
     }
   </script>
 </body>
