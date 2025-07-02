@@ -1,24 +1,24 @@
-name: Run Tokens
+name: Run Spotify Token
 
 on:
+  workflow_dispatch:  # Manual run for testing
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  run-tokens:
+  get-spotify-token:
     runs-on: ubuntu-latest
 
     env:
       SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
       SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-      YOUTUBE_OAUTH_CODE: ${{ secrets.YOUTUBE_OAUTH_CODE }}        # optional, only if you have a code saved
-      YOUTUBE_REDIRECT_URI: ${{ secrets.YOUTUBE_REDIRECT_URI }}    # optional, same here
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_REPO: ${{ github.repository }}
+      GITHUB_RUN_NUMBER: ${{ github.run_number }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -28,5 +28,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tokens script
-        run: node runTokens.js
+      - name: Print GitHub context info
+        run: |
+          echo "Running as $GITHUB_ACTOR on $GITHUB_REPO"
+          echo "This is run #$GITHUB_RUN_NUMBER"
+
+      - name: Run Spotify script
+        run: node runSpotify.js
