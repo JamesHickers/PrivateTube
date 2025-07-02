@@ -21,7 +21,6 @@ export function createYouTubePlayer(containerId, videoId) {
       allowfullscreen
       sandbox="allow-scripts allow-same-origin allow-presentation"
       style="border:none; border-radius:12px; overflow:hidden;"
-      referrerpolicy="no-referrer"
-    ></iframe>
+      referrerpolicy="no-referrer"></iframe>
   `;
 }
