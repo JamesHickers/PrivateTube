@@ -1,45 +1,30 @@
-export function createSpotifyPlayer(containerId, spotifyUri) {
-  const container = document.getElementById(containerId);
-  if (!container) {
-    console.error('❌ Container not found');
-    return;
-  }
+// youtubePlayer.js
+import { config } from '../config.js'; // adjust path
 
-  if (!spotifyUri || !spotifyUri.startsWith('spotify:track:')) {
-    console.error('❌ Invalid Spotify URI');
-    return;
-  }
+export async function createYouTubePlayer(containerId, videoId, options = {}) {
+  if (!videoId) return console.error('Invalid video ID');
 
-  const trackId = spotifyUri.split(':').pop();
-  const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator`;
+  if (!containerId) return console.error('Container not found');
 
-  // Clear any existing content
-  container.innerHTML = '';
+  // use the API key from config here
+  const apiKey = config.GOOGLE_API_KEY;
 
-  // Create iframe securely
+  // fetch metadata or just embed player
   const iframe = document.createElement('iframe');
-  iframe.src = embedUrl;
-  iframe.width = '100%';
-  iframe.height = '80';
+  iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&autoplay=${options.autoplay ? 1 : 0}`;
+  iframe.width = options.width || '320';
+  iframe.height = options.height || '180';
   iframe.frameBorder = '0';
-  iframe.allow = 'encrypted-media';
-  iframe.allowTransparency = true;
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
   iframe.sandbox = 'allow-scripts allow-same-origin allow-presentation';
   iframe.referrerPolicy = 'no-referrer';
   iframe.loading = 'lazy';
-  iframe.style.border = 'none';
   iframe.style.borderRadius = '12px';
+  iframe.style.border = 'none';
   iframe.style.overflow = 'hidden';
-  iframe.title = 'Spotify player';
+  iframe.title = 'YouTube Player';
 
-  const tip = document.createElement('p');
-  tip.textContent = 'Tap ▶️ to play the track';
-  tip.style.fontSize = '12px';
-  tip.style.color = '#999';
-  tip.style.textAlign = 'center';
-  tip.style.marginTop = '4px';
-  tip.style.fontFamily = 'sans-serif';
-
+  const container = document.getElementById(containerId);
+  container.innerHTML = ''; // clear old
   container.appendChild(iframe);
-  container.appendChild(tip);
 }
