@@ -5,20 +5,20 @@
   <title>BarneyTube & SpotSocial Search+Play</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    /* your existing styles… */
     body { background: #111; color: #eee; font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
     .search-section { margin-bottom: 2rem; }
-    input[type="text"] { padding: 0.5rem; font-size: 1rem; width: 70%; margin-right: 1rem; border-radius: 8px; border: none; background: #222; color: #eee; }
-    button { padding: 0.5rem 1rem; border: none; border-radius: 8px; background: #bb86fc; color: #121212; font-weight: bold; cursor: pointer; }
-    .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
-    .result-item { background: #222; border-radius: 8px; cursor: pointer; overflow: hidden; user-select: none; transition: background 0.3s; padding: 0.5rem; }
+    input[type="text"] { padding: .5rem; font-size: 1rem; width: 70%; margin-right: 1rem; border-radius: 8px; border: none; background: #222; color: #eee; }
+    button { padding: .5rem 1rem; border: none; border-radius: 8px; background: #bb86fc; color: #121212; font-weight: bold; cursor: pointer; }
+    .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 1rem; margin-top: 1rem; }
+    .result-item { background: #222; border-radius: 8px; cursor: pointer; overflow: hidden; user-select: none; transition: background .3s; padding: .5rem; }
     .result-item:hover { background: #444; }
-    .result-item img { width: 100%; display: block; border-radius: 4px; margin-bottom: 0.5rem; }
+    .result-item img { width: 100%; display: block; border-radius: 4px; margin-bottom: .5rem; }
     #spotify-player, #youtube-player { margin-top: 1rem; border-radius: 12px; overflow: hidden; background: #222; padding: 10px; }
     iframe { width: 100%; border: none; border-radius: 12px; aspect-ratio: 16/9; }
   </style>
 </head>
 <body>
-
   <h1>BarneyTube & SpotSocial</h1>
 
   <section class="search-section" id="spotify-search-section">
@@ -42,118 +42,106 @@
     import { createSpotifyPlayer } from './Player/spotifyPlayer.js';
     import { createYouTubePlayer } from './Player/youtubePlayer.js';
 
-    // Fallback data
-    const YOUTUBE_FALLBACK = [
-      { videoId: 'dQw4w9WgXcQ', title: 'Never Gonna Give You Up', thumb: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg' },
-    ];
+    console.log('Config loaded:', config);
 
-    // Spotify unchanged
-    let spotifyToken = null;
+    // DOM refs
+    const el = {
+      sq: document.getElementById('spotify-query'),
+      sb: document.getElementById('spotify-search-btn'),
+      sr: document.getElementById('spotify-results'),
+      sy: document.getElementById('spotify-player'),
+      yq: document.getElementById('youtube-query'),
+      yb: document.getElementById('youtube-search-btn'),
+      yr: document.getElementById('youtube-results'),
+      yy: document.getElementById('youtube-player'),
+    };
+
+    // --- Spotify Search & Play ---
+    let _spToken = null;
     async function getSpotifyAccessToken() {
-      const creds = btoa(config.SPOTIFY_CLIENT_ID + ':' + config.SPOTIFY_CLIENT_SECRET);
+      console.log('Requesting Spotify token...');
+      const creds = btoa(`${config.SPOTIFY_CLIENT_ID}:${config.SPOTIFY_CLIENT_SECRET}`);
       const res = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'grant_type=client_credentials'
       });
-      if (!res.ok) throw new Error('Spotify token error');
-      return (await res.json()).access_token;
-    }
-    async function searchSpotify(query, token) {
-      const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Spotify search error');
-      return (await res.json()).tracks.items.map(t=>({
-        id: t.id,
-        name: t.name,
-        artist: t.artists.map(a=>a.name).join(', '),
-        img: t.album.images[0]?.url||''
-      }));
-    }
-
-    // Updated YouTube search
-    async function searchYouTube(query) {
-      if (!config.GOOGLE_API_KEY || config.GOOGLE_API_KEY.startsWith('your-')) {
-        console.warn('No valid YouTube API key—using fallback');
-        return YOUTUBE_FALLBACK;
-      }
-      const url = new URL('https://www.googleapis.com/youtube/v3/search');
-      url.searchParams.set('part','snippet');
-      url.searchParams.set('type','video');
-      url.searchParams.set('maxResults','10');
-      url.searchParams.set('q',query);
-      url.searchParams.set('key',config.GOOGLE_API_KEY);
-
-      const res = await fetch(url);
       if (!res.ok) {
-        const errText = await res.text();
-        console.error(`YouTube API error ${res.status}:`, errText);
-        throw new Error(`YouTube API ${res.status}`);
+        const txt = await res.text();
+        console.error('Spotify token error:', res.status, txt);
+        throw new Error('Spotify token error');
       }
-      const { items } = await res.json();
-      return items.map(i=>({
-        videoId: i.id.videoId,
-        title: i.snippet.title,
-        thumb: i.snippet.thumbnails.high.url
-      }));
+      const { access_token } = await res.json();
+      console.log('Got Spotify token');
+      return access_token;
     }
 
-    // DOM refs
-    const spotifyQueryInput = document.getElementById('spotify-query');
-    const spotifySearchBtn = document.getElementById('spotify-search-btn');
-    const spotifyResultsDiv = document.getElementById('spotify-results');
+    async function searchSpotify(query) {
+      if (!_spToken) _spToken = await getSpotifyAccessToken();
+      const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+        headers: { 'Authorization': `Bearer ${_spToken}` }
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error('Spotify search error:', res.status, txt);
+        throw new Error('Spotify search error');
+      }
+      const { tracks } = await res.json();
+      return tracks.items;
+    }
 
-    const youtubeQueryInput = document.getElementById('youtube-query');
-    const youtubeSearchBtn = document.getElementById('youtube-search-btn');
-    const youtubeResultsDiv = document.getElementById('youtube-results');
-
-    // Spotify handler
-    spotifySearchBtn.onclick = async () => {
-      const q = spotifyQueryInput.value.trim();
+    el.sb.onclick = async () => {
+      const q = el.sq.value.trim();
       if (!q) return;
-      spotifyResultsDiv.innerHTML = 'Loading...';
+      el.sr.innerHTML = 'Loading...';
       try {
-        if (!spotifyToken) spotifyToken = await getSpotifyAccessToken();
-        const tracks = await searchSpotify(q, spotifyToken);
-        spotifyResultsDiv.innerHTML = tracks.length ? '' : 'No results found.';
-        tracks.forEach(t=>{
+        const tracks = await searchSpotify(q);
+        el.sr.innerHTML = tracks.length ? '' : 'No results found.';
+        tracks.forEach(t => {
           const div = document.createElement('div');
           div.className = 'result-item';
-          div.innerHTML = `<img src="${t.img}" alt="${t.name}"/><div>${t.name} — ${t.artist}</div>`;
-          div.onclick = ()=> createSpotifyPlayer('spotify-player', `spotify:track:${t.id}`);
-          spotifyResultsDiv.appendChild(div);
+          div.innerHTML = `<img src="${t.album.images[0]?.url||''}" /><div>${t.name} — ${t.artists.map(a=>a.name).join(', ')}</div>`;
+          div.onclick = () => createSpotifyPlayer('spotify-player', `spotify:track:${t.id}`);
+          el.sr.appendChild(div);
         });
-      } catch(e){
-        spotifyResultsDiv.innerHTML = `Error: ${e.message}`;
+      } catch (e) {
+        el.sr.innerHTML = `Error: ${e.message}`;
       }
     };
 
-    // YouTube handler
-    youtubeSearchBtn.onclick = async () => {
-      const q = youtubeQueryInput.value.trim();
+    // --- YouTube Search & Play ---
+    async function searchYouTube(query) {
+      console.log('Searching YouTube for', query);
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(query)}&key=${config.GOOGLE_API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error('YouTube search error:', res.status, txt);
+        throw new Error('YouTube search error');
+      }
+      const { items } = await res.json();
+      return items;
+    }
+
+    el.yb.onclick = async () => {
+      const q = el.yq.value.trim();
       if (!q) return;
-      youtubeResultsDiv.innerHTML = 'Loading...';
+      el.yr.innerHTML = 'Loading...';
       try {
         const vids = await searchYouTube(q);
-        youtubeResultsDiv.innerHTML = vids.length ? '' : 'No results found.';
-        vids.forEach(v=>{
+        el.yr.innerHTML = vids.length ? '' : 'No results found.';
+        vids.forEach(v => {
+          const vid = v.id.videoId;
+          const thumb = v.snippet.thumbnails.high.url;
+          const title = v.snippet.title;
           const div = document.createElement('div');
           div.className = 'result-item';
-          div.innerHTML = `<img src="${v.thumb}" alt="${v.title}"/><div>${v.title}</div>`;
-          div.onclick = ()=> createYouTubePlayer('youtube-player', v.videoId, { autoplay: true });
-          youtubeResultsDiv.appendChild(div);
+          div.innerHTML = `<img src="${thumb}" /><div>${title}</div>`;
+          div.onclick = () => createYouTubePlayer('youtube-player', vid, { autoplay: true });
+          el.yr.appendChild(div);
         });
-      } catch(e) {
-        youtubeResultsDiv.innerHTML = `Error: ${e.message}`;
-        // fallback UI
-        YOUTUBE_FALLBACK.forEach(v=>{
-          const div = document.createElement('div');
-          div.className = 'result-item';
-          div.innerHTML = `<img src="${v.thumb}" alt="${v.title}"/><div>${v.title}</div>`;
-          div.onclick = ()=> createYouTubePlayer('youtube-player', v.videoId, { autoplay: true });
-          youtubeResultsDiv.appendChild(div);
-        });
+      } catch (e) {
+        el.yr.innerHTML = `Error: ${e.message}`;
       }
     };
   </script>
