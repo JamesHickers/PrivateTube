@@ -30,78 +30,80 @@
   <div id="playerContainer"></div>
   <div id="resultsContainer"></div>
 
-  <script type="module">
-    import { config } from './config.js';
-    import { createYouTubePlayer } from './Player/youtubePlayer.js';
+ <script type="module">
+  import { config } from './config.js';
+  import { createYouTubePlayer } from './Player/youtubePlayer.js';
 
-    const API_KEY = config.GOOGLE_API_KEY;
-    const searchInput = document.getElementById('searchInput');
-    const searchButton = document.getElementById('searchButton');
-    const resultsContainer = document.getElementById('resultsContainer');
-    const playerContainer = document.getElementById('playerContainer');
+  const API_KEY = config.GOOGLE_API_KEY;
+  const searchInput = document.getElementById('searchInput');
+  const searchButton = document.getElementById('searchButton');
+  const resultsContainer = document.getElementById('resultsContainer');
+  const playerContainer = document.getElementById('playerContainer');
 
-    async function searchVideos(query) {
-      const url = new URL('https://www.googleapis.com/youtube/v3/search');
-      url.searchParams.set('part', 'snippet');
-      url.searchParams.set('q', query);
-      url.searchParams.set('type', 'video');
-      url.searchParams.set('maxResults', '12');
-      url.searchParams.set('key', API_KEY);
+  async function searchVideos(query) {
+    const url = new URL('https://www.googleapis.com/youtube/v3/search');
+    url.searchParams.set('part', 'snippet');
+    url.searchParams.set('q', query);
+    url.searchParams.set('type', 'video');
+    url.searchParams.set('maxResults', '12');
+    url.searchParams.set('key', API_KEY);
 
-      const res = await fetch(url);
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.error?.message || `HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      return data.items;
+    const res = await fetch(url);
+
+    const data = await res.json(); // read JSON once
+
+    if (!res.ok) {
+      // If error, throw message from API response or status code
+      throw new Error(data?.error?.message || `HTTP ${res.status}`);
     }
 
-    function renderResults(videos) {
-      resultsContainer.innerHTML = '';
-      videos.forEach(video => {
-        const vid = video.id.videoId;
-        const title = video.snippet.title;
-        const thumb = video.snippet.thumbnails.high.url;
+    return data.items;
+  }
 
-        const div = document.createElement('div');
-        div.className = 'video';
-        div.innerHTML = `
-          <img src="${thumb}" alt="${title}" />
-          <div class="info"><h3>${title}</h3></div>
-        `;
-        div.onclick = () => {
-          playerContainer.innerHTML = '';
-          createYouTubePlayer(
-            'playerContainer',
-            vid,
-            { autoplay: true, width: '100%', height: 360 }
-          );
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-        resultsContainer.appendChild(div);
-      });
-    }
+  function renderResults(videos) {
+    resultsContainer.innerHTML = '';
+    videos.forEach(video => {
+      const vid = video.id.videoId;
+      const title = video.snippet.title;
+      const thumb = video.snippet.thumbnails.high.url;
 
-    searchButton.onclick = async () => {
-      const q = searchInput.value.trim();
-      if (!q) return;
-      playerContainer.innerHTML = '';
-      resultsContainer.innerHTML = '<p>Loading…</p>';
+      const div = document.createElement('div');
+      div.className = 'video';
+      div.innerHTML = `
+        <img src="${thumb}" alt="${title}" />
+        <div class="info"><h3>${title}</h3></div>
+      `;
+      div.onclick = () => {
+        playerContainer.innerHTML = '';
+        createYouTubePlayer(
+          'playerContainer',
+          vid,
+          { autoplay: true, width: '100%', height: 360 }
+        );
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+      resultsContainer.appendChild(div);
+    });
+  }
 
-      try {
-        const videos = await searchVideos(q);
-        if (!videos.length) {
-          resultsContainer.innerHTML = '<p>No results found.</p>';
-          return;
-        }
-        renderResults(videos);
-      } catch (e) {
-        resultsContainer.innerHTML = `<p>Error: ${e.message}</p>`;
-        console.error('YouTube search failed:', e);
+  searchButton.onclick = async () => {
+    const q = searchInput.value.trim();
+    if (!q) return;
+    playerContainer.innerHTML = '';
+    resultsContainer.innerHTML = '<p>Loading…</p>';
+
+    try {
+      const videos = await searchVideos(q);
+      if (!videos.length) {
+        resultsContainer.innerHTML = '<p>No results found.</p>';
+        return;
       }
-    };
-  </script>
-
+      renderResults(videos);
+    } catch (e) {
+      resultsContainer.innerHTML = `<p>Error: ${e.message}</p>`;
+      console.error('YouTube search failed:', e);
+    }
+  };
+</script>
 </body>
 </html>
