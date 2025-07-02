@@ -123,7 +123,11 @@
   <script type="module">
     import { config } from './config.js';
 
+    let spotifyToken = null;
+    let recentPlays = [];
+
     async function getSpotifyAccessToken() {
+      if (spotifyToken) return spotifyToken;
       const creds = btoa(config.SPOTIFY_CLIENT_ID + ':' + config.SPOTIFY_CLIENT_SECRET);
       const res = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
@@ -135,10 +139,12 @@
       });
       if (!res.ok) throw new Error('Spotify token error');
       const data = await res.json();
-      return data.access_token;
+      spotifyToken = data.access_token;
+      return spotifyToken;
     }
 
-    async function searchSpotify(query, token) {
+    async function searchSpotify(query) {
+      const token = await getSpotifyAccessToken();
       const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -154,21 +160,6 @@
       return data.items;
     }
 
-    const spotifyQueryInput = document.getElementById('spotify-query');
-    const spotifySearchBtn = document.getElementById('spotify-search-btn');
-    const spotifyResultsDiv = document.getElementById('spotify-results');
-    const spotifyPlayerDiv = document.getElementById('spotify-player');
-
-    const youtubeQueryInput = document.getElementById('youtube-query');
-    const youtubeSearchBtn = document.getElementById('youtube-search-btn');
-    const youtubeResultsDiv = document.getElementById('youtube-results');
-    const youtubePlayerDiv = document.getElementById('youtube-player');
-
-    const recentListDiv = document.getElementById('recent-list');
-
-    let spotifyToken = null;
-    let recentPlays = [];
-
     function addRecentPlay(platform, title, url) {
       recentPlays.unshift({ platform, title, url });
       if (recentPlays.length > 5) recentPlays.pop();
@@ -176,20 +167,22 @@
     }
 
     function renderRecent() {
-      if (!recentPlays.length) {
+      const recentListDiv = document.getElementById('recent-list');
+      if (recentPlays.length === 0) {
         recentListDiv.textContent = 'No recent plays yet.';
         return;
       }
       recentListDiv.innerHTML = '';
-      recentPlays.forEach(item => {
+      recentPlays.forEach(({ platform, title, url }) => {
         const div = document.createElement('div');
         div.className = 'recent-item';
-        div.innerHTML = `<span>${item.platform}</span>: <a href="${item.url}" target="_blank" rel="noopener">${item.title}</a>`;
+        div.innerHTML = `<span>${platform}</span>: <a href="${url}" target="_blank" rel="noopener">${title}</a>`;
         recentListDiv.appendChild(div);
       });
     }
 
     function playSpotify(trackId) {
+      const spotifyPlayerDiv = document.getElementById('spotify-player');
       spotifyPlayerDiv.innerHTML = `
         <iframe
           src="https://open.spotify.com/embed/track/${trackId}"
@@ -205,6 +198,7 @@
     }
 
     function playYouTube(videoId) {
+      const youtubePlayerDiv = document.getElementById('youtube-player');
       youtubePlayerDiv.innerHTML = `
         <iframe
           src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1"
@@ -219,19 +213,18 @@
       `;
     }
 
-    spotifySearchBtn.onclick = async () => {
-      const query = spotifyQueryInput.value.trim();
+    document.getElementById('spotify-search-btn').onclick = async () => {
+      const query = document.getElementById('spotify-query').value.trim();
+      const resultsDiv = document.getElementById('spotify-results');
       if (!query) return;
-      spotifyResultsDiv.innerHTML = 'Loading...';
-
+      resultsDiv.textContent = 'Loading...';
       try {
-        if (!spotifyToken) spotifyToken = await getSpotifyAccessToken();
-        const tracks = await searchSpotify(query, spotifyToken);
+        const tracks = await searchSpotify(query);
         if (!tracks.length) {
-          spotifyResultsDiv.innerHTML = 'No results found.';
+          resultsDiv.textContent = 'No results found.';
           return;
         }
-        spotifyResultsDiv.innerHTML = '';
+        resultsDiv.innerHTML = '';
         tracks.forEach(track => {
           const div = document.createElement('div');
           div.className = 'result-item';
@@ -243,25 +236,25 @@
             playSpotify(track.id);
             addRecentPlay('Spotify', track.name, `https://open.spotify.com/track/${track.id}`);
           };
-          spotifyResultsDiv.appendChild(div);
+          resultsDiv.appendChild(div);
         });
       } catch(e) {
-        spotifyResultsDiv.innerHTML = `Error: ${e.message}`;
+        resultsDiv.textContent = `Error: ${e.message}`;
       }
     };
 
-    youtubeSearchBtn.onclick = async () => {
-      const query = youtubeQueryInput.value.trim();
+    document.getElementById('youtube-search-btn').onclick = async () => {
+      const query = document.getElementById('youtube-query').value.trim();
+      const resultsDiv = document.getElementById('youtube-results');
       if (!query) return;
-      youtubeResultsDiv.innerHTML = 'Loading...';
-
+      resultsDiv.textContent = 'Loading...';
       try {
         const videos = await searchYouTube(query);
         if (!videos.length) {
-          youtubeResultsDiv.innerHTML = 'No results found.';
+          resultsDiv.textContent = 'No results found.';
           return;
         }
-        youtubeResultsDiv.innerHTML = '';
+        resultsDiv.innerHTML = '';
         videos.forEach(video => {
           const vid = video.id.videoId;
           const snippet = video.snippet;
@@ -275,10 +268,10 @@
             playYouTube(vid);
             addRecentPlay('YouTube', snippet.title, `https://youtube.com/watch?v=${vid}`);
           };
-          youtubeResultsDiv.appendChild(div);
+          resultsDiv.appendChild(div);
         });
       } catch(e) {
-        youtubeResultsDiv.innerHTML = `Error: ${e.message}`;
+        resultsDiv.textContent = `Error: ${e.message}`;
       }
     };
   </script>
