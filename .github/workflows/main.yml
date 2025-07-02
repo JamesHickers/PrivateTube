@@ -14,6 +14,6 @@ jobs:
       - name: Create secrets.js
         run: |
           mkdir -p src
-          echo "export const GOOGLE_API_KEY = '${{ secrets.GOOGLE_API_KEY }}';" >> src/secrets.js
-          echo "export const SPOTIFY_CLIENT_ID = '${{ secrets.SPOTIFY_CLIENT_ID }}';" >> src/secrets.js
-          echo "export const SPOTIFY_CLIENT_SECRET = '${{ secrets.SPOTIFY_CLIENT_SECRET }}';" >> src/secrets.js
+          echo "export const GOOGLE_API_KEY = '${{ secrets.GOOGLE_API_KEY }}
+          echo "export const SPOTIFY_CLIENT_ID = '${{ secrets.SPOTIFY_CLIENT_ID }}'
+          echo "export const SPOTIFY_CLIENT_SECRET = '${{ secrets.SPOTIFY_CLIENT_SECRET }}'
