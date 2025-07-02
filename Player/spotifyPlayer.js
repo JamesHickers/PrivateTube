@@ -1,10 +1,19 @@
 // spotifyPlayer.js
+import { enablePrivacyProtections } from './privacyHelper.js';
+
 export function createSpotifyPlayer(containerId, spotifyUri) {
+  // Enable privacy protections before injecting player
+  enablePrivacyProtections();
+
   const container = document.getElementById(containerId);
-  if (!container) return console.error('Container not found');
+  if (!container) {
+    console.error('Container not found');
+    return;
+  }
 
   if (!spotifyUri || !spotifyUri.startsWith('spotify:track:')) {
-    return console.error('Invalid Spotify URI');
+    console.error('Invalid Spotify URI');
+    return;
   }
 
   const trackId = spotifyUri.split(':').pop();
