@@ -1,10 +1,4 @@
-// spotifyPlayer.js
-import { enablePrivacyProtections } from './privacyHelper.js';
-
 export function createSpotifyPlayer(containerId, spotifyUri) {
-  // Enable privacy protections before injecting player
-  enablePrivacyProtections();
-
   const container = document.getElementById(containerId);
   if (!container) {
     console.error('Container not found');
@@ -20,7 +14,7 @@ export function createSpotifyPlayer(containerId, spotifyUri) {
 
   container.innerHTML = `
     <iframe
-      src="https://open.spotify.com/embed/track/${trackId}"
+      src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator"
       width="100%"
       height="80"
       frameborder="0"
@@ -30,5 +24,8 @@ export function createSpotifyPlayer(containerId, spotifyUri) {
       referrerpolicy="no-referrer"
       style="border:none; border-radius:12px; overflow:hidden;"
     ></iframe>
+    <p style="font-size:12px; color:#999; text-align:center; margin-top:4px;">
+      Tap ▶️ to play the track
+    </p>
   `;
 }
