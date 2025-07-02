@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>BarneyTube – Private YouTube Frontend</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://apis.google.com/js/api.js"></script>
   <style>
     body {
@@ -75,9 +75,9 @@
 <body>
 
 <header>
-  <button onclick="handleAuthClick()">Sign In</button>
+  <button id="authButton">Sign In</button>
   <input type="text" id="searchInput" placeholder="Search YouTube..." />
-  <button onclick="searchVideos()">Search</button>
+  <button id="searchButton">Search</button>
 </header>
 
 <main>
@@ -85,14 +85,25 @@
   <div class="results" id="resultsContainer"></div>
 </main>
 
-<script>
-  const API_KEY = process.env.GOOGLE_API_KEY;
-  const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+<script type="module">
+  import { config } from './config.js';
+
+  const API_KEY = config.GOOGLE_API_KEY;
+  const CLIENT_ID = config.GOOGLE_CLIENT_ID;
   const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"];
   const SCOPES = "https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.force-ssl";
 
+  const authButton = document.getElementById("authButton");
+  const searchInput = document.getElementById("searchInput");
+  const searchButton = document.getElementById("searchButton");
+  const resultsContainer = document.getElementById("resultsContainer");
+  const playerContainer = document.getElementById("playerContainer");
+
+  // Load and init gapi
   function gapiLoaded() {
-    gapi.load("client:auth2", initializeGapiClient);
+    return new Promise(resolve => {
+      gapi.load("client:auth2", resolve);
+    });
   }
 
   async function initializeGapiClient() {
@@ -104,19 +115,17 @@
     });
   }
 
-  function handleAuthClick() {
+  async function handleAuthClick() {
     const authInstance = gapi.auth2.getAuthInstance();
     if (!authInstance.isSignedIn.get()) {
-      authInstance.signIn();
+      await authInstance.signIn();
+      authButton.textContent = "Sign Out";
     } else {
-      authInstance.signOut();
+      await authInstance.signOut();
+      authButton.textContent = "Sign In";
       alert("Signed out");
     }
   }
-
-  const searchInput = document.getElementById("searchInput");
-  const resultsContainer = document.getElementById("resultsContainer");
-  const playerContainer = document.getElementById("playerContainer");
 
   async function searchVideos() {
     const query = searchInput.value.trim();
@@ -170,10 +179,13 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  window.onload = () => {
-    gapiLoaded();
-  };
-</script>
+  (async () => {
+    await gapiLoaded();
+    await initializeGapiClient();
 
+    authButton.addEventListener("click", handleAuthClick);
+    searchButton.addEventListener("click", searchVideos);
+  })();
+</script>
 </body>
 </html>
